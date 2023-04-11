@@ -25,7 +25,33 @@ var (
 	MemProviderTypeDuComman memProviderSourceType = 2
 )
 
-func NewMemDuFileBuilder(dufile string) (core.IProviderBuilder, error) {
+type MemDUBuilderOption struct {
+	Ignore []string
+}
+
+func NewMemDuFileBuilder(dufile string, opts *MemDUBuilderOption) (core.IProviderBuilder, error) {
+	if opts == nil {
+		opts = &MemDUBuilderOption{Ignore: make([]string, 0)}
+	}
+
+	ignores := make([]string, 0, len(opts.Ignore))
+
+	for _, ig := range opts.Ignore {
+		ig = strings.TrimSuffix(ig, "*")
+
+		if !strings.HasPrefix(ig, "./") {
+			if !strings.HasPrefix(ig, "/") {
+				ig = "./" + ig
+			}
+		}
+
+		if !strings.HasSuffix(ig, "/") {
+			ig = ig + "/"
+		}
+
+		ignores = append(ignores, ig)
+	}
+
 	f, err := os.OpenFile(dufile, os.O_RDONLY, os.ModePerm)
 	if err != nil {
 		return nil, errors.Wrap(err, "create mem provider builder fail open dufile")
@@ -34,6 +60,7 @@ func NewMemDuFileBuilder(dufile string) (core.IProviderBuilder, error) {
 	return &MemBuilder{
 		SourceType: MemProviderTypeDUFile,
 		dufile:     f,
+		ignores:    ignores,
 	}, nil
 }
 
@@ -42,6 +69,8 @@ type MemBuilder struct {
 	SourceType memProviderSourceType
 
 	dufile *os.File
+
+	ignores []string
 }
 
 func (b *MemBuilder) Build() (core.IProvider, error) {
@@ -50,7 +79,7 @@ func (b *MemBuilder) Build() (core.IProvider, error) {
 	switch b.SourceType {
 	case MemProviderTypeDUFile:
 		var err error
-		ip, err = buildFromDuFile(b.dufile, true)
+		ip, err = buildFromDuFile(b.dufile, true, b.ignores)
 		if err != nil {
 			return nil, err
 		}
@@ -61,7 +90,7 @@ func (b *MemBuilder) Build() (core.IProvider, error) {
 	return ip, nil
 }
 
-func buildFromDuFile(f *os.File, omitParseErr bool) (*MemProvider, error) {
+func buildFromDuFile(f *os.File, omitParseErr bool, ignores []string) (*MemProvider, error) {
 
 	r := bufio.NewReader(f)
 	defer f.Close()
@@ -71,6 +100,7 @@ func buildFromDuFile(f *os.File, omitParseErr bool) (*MemProvider, error) {
 	var lastParentItem *core.InfoItem
 	var lastParentPath string
 
+readnewline:
 	for {
 		// 姑且认为一行的长度不会超出
 		l, _, err := r.ReadLine()
@@ -98,6 +128,13 @@ func buildFromDuFile(f *os.File, omitParseErr bool) (*MemProvider, error) {
 
 			log.Println(errors.Wrap(err, "fail to read line"))
 			continue
+		}
+
+		// check if should ignore
+		for _, ig := range ignores {
+			if strings.HasPrefix(strings.Join(duline.Paths, "/"), ig) {
+				continue readnewline
+			}
 		}
 
 		tarNode := core.NewInfoItem()

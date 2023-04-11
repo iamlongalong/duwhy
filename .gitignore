@@ -15,4 +15,7 @@
 vendor/
 
 duserver
+duserver_linux
 xx.log
+longtest.log
+.vscode

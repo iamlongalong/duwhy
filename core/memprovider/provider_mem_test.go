@@ -8,7 +8,7 @@ import (
 )
 
 func TestProviderMemDefault(t *testing.T) {
-	ipb, err := NewMemDuFileBuilder("/Users/long/go/src/duwhy/xx.log")
+	ipb, err := NewMemDuFileBuilder("/Users/long/go/src/duwhy/xx.log", nil)
 	assert.Nil(t, err)
 
 	ip, err := ipb.Build()
@@ -53,7 +53,7 @@ func TestProviderMemDefault(t *testing.T) {
 }
 
 func TestProviderMemBase(t *testing.T) {
-	ipb, err := NewMemDuFileBuilder("/Users/long/go/src/duwhy/xx.log")
+	ipb, err := NewMemDuFileBuilder("/Users/long/go/src/duwhy/xx.log", nil)
 	assert.Nil(t, err)
 
 	ip, err := ipb.Build()

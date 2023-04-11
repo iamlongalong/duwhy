@@ -6,6 +6,8 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/gin-contrib/pprof"
+
 	"github.com/gin-gonic/gin"
 )
 
@@ -59,6 +61,7 @@ func Serve(ctx context.Context, opt ServerOption) error {
 
 func NewDuHttpServer(isrv IDuServer, cfg ServerConfig) *gin.Engine {
 	engine := gin.Default()
+	pprof.Register(engine)
 
 	if cfg.Auth.Enable {
 		engine.Use(gin.BasicAuth(gin.Accounts{cfg.Auth.UserName: cfg.Auth.Password}))

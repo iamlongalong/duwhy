@@ -15,6 +15,7 @@ import (
 
 var (
 	DuLogFile  *string
+	DuIgnores  *[]string
 	ServerHost *string
 	ServerPort *int
 
@@ -28,7 +29,9 @@ var serverCmd = &cobra.Command{
 	Short: "run http server",
 	Long:  `run http server for disklog`,
 	Run: func(cmd *cobra.Command, args []string) {
-		pb, err := memprovider.NewMemDuFileBuilder(*DuLogFile)
+		pb, err := memprovider.NewMemDuFileBuilder(*DuLogFile, &memprovider.MemDUBuilderOption{
+			Ignore: *DuIgnores,
+		})
 		if err != nil {
 			log.Printf("run duserver fail : %s\n", err)
 			os.Exit(1)
@@ -74,6 +77,8 @@ func init() {
 	ServerAuthPass = serverCmd.Flags().StringP("auth.pass", "P", "", "server auth pass")
 
 	DuLogFile = serverCmd.Flags().StringP("dufile", "f", "", "du file path")
+
+	DuIgnores = serverCmd.Flags().StringArrayP("ignores", "i", []string{}, "ignore du file paths, like ./xxx/*")
 	// Cobra supports local flags which will only run when this command
 	// is called directly, e.g.:
 	// serverCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
