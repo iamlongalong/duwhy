@@ -5,9 +5,10 @@ import (
 	"duwhy/core"
 	"errors"
 	"fmt"
+	"time"
 
+	"github.com/gin-contrib/cors"
 	"github.com/gin-contrib/pprof"
-
 	"github.com/gin-gonic/gin"
 )
 
@@ -62,6 +63,17 @@ func Serve(ctx context.Context, opt ServerOption) error {
 func NewDuHttpServer(isrv IDuServer, cfg ServerConfig) *gin.Engine {
 	engine := gin.Default()
 	pprof.Register(engine)
+	engine.Use(cors.New(cors.Config{
+		AllowOrigins:     []string{"*"},
+		AllowMethods:     []string{"PUT", "POST", "GET", "DELETE", "OPTIONS"},
+		AllowHeaders:     []string{"Origin"},
+		ExposeHeaders:    []string{"Content-Length"},
+		AllowCredentials: true,
+		AllowOriginFunc: func(origin string) bool {
+			return true
+		},
+		MaxAge: 12 * time.Hour,
+	}))
 
 	if cfg.Auth.Enable {
 		engine.Use(gin.BasicAuth(gin.Accounts{cfg.Auth.UserName: cfg.Auth.Password}))
