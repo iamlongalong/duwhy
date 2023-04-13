@@ -169,6 +169,8 @@ readnewline:
 
 	}
 
+	rootItem.MustGetSize(4)
+
 	cache := gcache.New(1000).LRU().Expiration(time.Minute * 5).Build()
 
 	memprovider := &MemProvider{

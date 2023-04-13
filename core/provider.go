@@ -74,6 +74,23 @@ func (ii *InfoItem) AddChildItem(ci *InfoItem, forceCover bool, updateInfo bool)
 	return ok
 }
 
+// MustGetSize 若未设置当前路径的大小，则获取子路径的大小之和
+func (ii *InfoItem) MustGetSize(minFileSizeKB int) int {
+	if ii.SizeKB != 0 {
+		return ii.SizeKB
+	}
+
+	for _, c := range ii.Childs {
+		ii.SizeKB += c.MustGetSize(minFileSizeKB)
+	}
+
+	if ii.SizeKB == 0 {
+		ii.SizeKB = minFileSizeKB
+	}
+
+	return ii.SizeKB
+}
+
 func (ii *InfoItem) SortChildren() {
 	if ii.sorted {
 		return
@@ -191,6 +208,7 @@ func FilterChildrens(ii *InfoItem, maxItem int, longTailPercent float64) error {
 	if longTailPercent > 1 || longTailPercent <= 0 {
 		return errors.New("long tail percent must be in 0 < x <= 1")
 	}
+	ii.MustGetSize(4) // 默认最小 file block 为 4kb
 
 	ii.SortChildren()
 
@@ -214,14 +232,15 @@ func FilterChildrens(ii *InfoItem, maxItem int, longTailPercent float64) error {
 
 		// 大小超出
 		if float64(nowsize+ci.SizeKB)/float64(ii.SizeKB) > longTailPercent {
-
-			otherItem := &InfoItem{
-				Name:            "Others",
-				SizeKB:          ii.SizeKB - nowsize,
-				PercentOfParent: (ii.SizeKB - nowsize) * 10000 / ii.SizeKB,
+			if len(childs) != 0 { // 一个子节点都没有就跳过
+				otherItem := &InfoItem{
+					Name:            "Others",
+					SizeKB:          ii.SizeKB - nowsize,
+					PercentOfParent: (ii.SizeKB - nowsize) * 10000 / ii.SizeKB,
+				}
+				childs = append(childs, otherItem)
+				break
 			}
-			childs = append(childs, otherItem)
-			break
 		}
 
 		ci.PercentOfParent = (ci.SizeKB * 10000) / ii.SizeKB
